@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Controlador DJ Pro Standalone</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- API de IFrame de YouTube -->
+    <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         body { background-color: #0d1117; color: #f0f6fc; user-select: none; }
         .jogwheel {
-            width: 180px; height: 180px;
+            width: 160px; height: 160px;
             background: conic-gradient(#1f2937, #374151, #1f2937, #111827);
             border-radius: 50%;
             border: 4px solid #4b5563;
@@ -17,18 +19,11 @@
             transition: transform 0.05s linear;
         }
         .jogwheel:active { cursor: grabbing; }
-        .vinyl-center {
-            width: 70px; height: 70px;
-            background: #111827;
-            border: 2px solid #6b7280;
-            border-radius: 50%;
-        }
-        .fader-vertical { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 8px; height: 100px; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 md:p-4">
 
-    <!-- BARRA SUPERIOR DE CONTROL -->
+    <!-- BARRA SUPERIOR -->
     <header class="bg-gray-900 border border-gray-800 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 mb-3 shadow-lg">
         <h1 class="text-xl font-bold tracking-wider text-cyan-400 flex items-center gap-2">🎧 DJ VIRTUAL PRO</h1>
         <div class="flex gap-2">
@@ -37,7 +32,7 @@
         </div>
     </header>
 
-    <!-- INTERFAZ PRINCIPAL DE LA MESA DE MEZCLAS -->
+    <!-- INTERFAZ PRINCIPAL -->
     <main class="grid grid-cols-1 lg:grid-cols-3 gap-3 flex-grow">
 
         <!-- DECK A -->
@@ -45,37 +40,48 @@
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <span class="bg-cyan-500 text-black font-black px-2 py-0.5 rounded text-xs">DECK A</span>
-                    <input type="file" id="fileA" accept="audio/*" class="hidden" onchange="loadAudio(this, 'A')">
-                    <button onclick="document.getElementById('fileA').click()" class="bg-gray-800 hover:bg-gray-700 text-xs px-2 py-1 rounded border border-gray-700">📂 Cargar MP3</button>
+                    <div class="flex gap-1">
+                        <button onclick="loadDemoTrack('A')" class="bg-cyan-800 hover:bg-cyan-700 text-xs px-2 py-1 rounded border border-cyan-600">⚡ Demo</button>
+                        <input type="file" id="fileA" accept="audio/*" class="hidden" onchange="loadAudioFile(this, 'A')">
+                        <button onclick="document.getElementById('fileA').click()" class="bg-gray-800 hover:bg-gray-700 text-xs px-2 py-1 rounded border border-gray-700">📂 MP3</button>
+                    </div>
                 </div>
-                <div class="bg-black/40 p-2 rounded-lg border border-gray-800 mb-3 text-xs text-gray-400 truncate" id="titleA">Ninguna pista cargada</div>
+
+                <!-- Input para YouTube -->
+                <div class="flex gap-1 mb-2">
+                    <input type="text" id="ytInputA" placeholder="Pega enlace de YouTube..." class="bg-black/50 border border-gray-700 text-xs px-2 py-1.5 rounded w-full text-gray-200 outline-none focus:border-cyan-500">
+                    <button onclick="loadYouTubeTrack('A')" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded text-xs font-bold">▶ YT</button>
+                </div>
+
+                <div class="bg-black/40 p-2 rounded-lg border border-gray-800 mb-2 text-xs text-gray-400 truncate" id="titleA">Ninguna pista cargada</div>
                 
                 <!-- Controles Hot Cues y Loops -->
-                <div class="grid grid-cols-6 gap-1 mb-3">
-                    <button onclick="setHotCue('A', 1)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">C1</button>
-                    <button onclick="setHotCue('A', 2)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">C2</button>
-                    <button onclick="setHotCue('A', 3)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">C3</button>
-                    <button onclick="triggerLoop('A', 1)" class="bg-gray-800 hover:bg-cyan-600 text-cyan-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">1B</button>
-                    <button onclick="triggerLoop('A', 2)" class="bg-gray-800 hover:bg-cyan-600 text-cyan-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">2B</button>
-                    <button onclick="triggerLoop('A', 4)" class="bg-gray-800 hover:bg-cyan-600 text-cyan-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">4B</button>
+                <div class="grid grid-cols-6 gap-1 mb-2">
+                    <button onclick="setHotCue('A', 1)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 font-bold py-1 rounded text-xs border border-gray-700">C1</button>
+                    <button onclick="setHotCue('A', 2)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 font-bold py-1 rounded text-xs border border-gray-700">C2</button>
+                    <button onclick="setHotCue('A', 3)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 font-bold py-1 rounded text-xs border border-gray-700">C3</button>
+                    <button onclick="triggerLoop('A', 1)" class="bg-gray-800 hover:bg-cyan-600 text-cyan-400 font-bold py-1 rounded text-xs border border-gray-700">1B</button>
+                    <button onclick="triggerLoop('A', 2)" class="bg-gray-800 hover:bg-cyan-600 text-cyan-400 font-bold py-1 rounded text-xs border border-gray-700">2B</button>
+                    <button onclick="triggerLoop('A', 4)" class="bg-gray-800 hover:bg-cyan-600 text-cyan-400 font-bold py-1 rounded text-xs border border-gray-700">4B</button>
                 </div>
             </div>
 
             <!-- Jogwheel Interactivo -->
             <div class="flex justify-center items-center my-2">
                 <div class="jogwheel flex justify-center items-center" id="jogA" onmousedown="startScratch('A', event)" ontouchstart="startScratch('A', event)">
-                    <div class="vinyl-center flex flex-col justify-center items-center text-[10px] text-gray-400 font-bold">
-                        <span>PIONEER</span>
-                    </div>
+                    <div class="w-16 h-16 bg-gray-950 border border-gray-700 rounded-full flex items-center justify-center text-[9px] text-gray-400 font-bold">DECK A</div>
                 </div>
             </div>
 
-            <!-- Botones Play / CUE / Sync -->
+            <!-- Controles Play / CUE -->
             <div class="grid grid-cols-3 gap-2 mt-2">
                 <button onclick="cueTrack('A')" class="bg-red-900/60 hover:bg-red-800 border border-red-700 py-2 rounded-lg font-bold text-xs">CUE</button>
                 <button onclick="playTrack('A')" id="playBtnA" class="bg-green-600 hover:bg-green-500 text-black py-2 rounded-lg font-black text-xs shadow-lg">PLAY</button>
                 <button onclick="syncTempo('A')" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 py-2 rounded-lg font-bold text-xs">SYNC</button>
             </div>
+            
+            <!-- Contenedor invisible para YouTube IFrame -->
+            <div id="yt-player-A" class="hidden"></div>
         </section>
 
         <!-- MEZCLADOR CENTRAL (MIXER) -->
@@ -120,37 +126,48 @@
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <span class="bg-amber-500 text-black font-black px-2 py-0.5 rounded text-xs">DECK B</span>
-                    <input type="file" id="fileB" accept="audio/*" class="hidden" onchange="loadAudio(this, 'B')">
-                    <button onclick="document.getElementById('fileB').click()" class="bg-gray-800 hover:bg-gray-700 text-xs px-2 py-1 rounded border border-gray-700">📂 Cargar MP3</button>
+                    <div class="flex gap-1">
+                        <button onclick="loadDemoTrack('B')" class="bg-amber-800 hover:bg-amber-700 text-xs px-2 py-1 rounded border border-amber-600">⚡ Demo</button>
+                        <input type="file" id="fileB" accept="audio/*" class="hidden" onchange="loadAudioFile(this, 'B')">
+                        <button onclick="document.getElementById('fileB').click()" class="bg-gray-800 hover:bg-gray-700 text-xs px-2 py-1 rounded border border-gray-700">📂 MP3</button>
+                    </div>
                 </div>
-                <div class="bg-black/40 p-2 rounded-lg border border-gray-800 mb-3 text-xs text-gray-400 truncate" id="titleB">Ninguna pista cargada</div>
+
+                <!-- Input para YouTube -->
+                <div class="flex gap-1 mb-2">
+                    <input type="text" id="ytInputB" placeholder="Pega enlace de YouTube..." class="bg-black/50 border border-gray-700 text-xs px-2 py-1.5 rounded w-full text-gray-200 outline-none focus:border-amber-500">
+                    <button onclick="loadYouTubeTrack('B')" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded text-xs font-bold">▶ YT</button>
+                </div>
+
+                <div class="bg-black/40 p-2 rounded-lg border border-gray-800 mb-2 text-xs text-gray-400 truncate" id="titleB">Ninguna pista cargada</div>
                 
                 <!-- Controles Hot Cues y Loops -->
-                <div class="grid grid-cols-6 gap-1 mb-3">
-                    <button onclick="setHotCue('B', 1)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">C1</button>
-                    <button onclick="setHotCue('B', 2)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">C2</button>
-                    <button onclick="setHotCue('B', 3)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">C3</button>
-                    <button onclick="triggerLoop('B', 1)" class="bg-gray-800 hover:bg-amber-600 text-amber-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">1B</button>
-                    <button onclick="triggerLoop('B', 2)" class="bg-gray-800 hover:bg-amber-600 text-amber-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">2B</button>
-                    <button onclick="triggerLoop('B', 4)" class="bg-gray-800 hover:bg-amber-600 text-amber-400 hover:text-black font-bold py-1 rounded text-xs border border-gray-700">4B</button>
+                <div class="grid grid-cols-6 gap-1 mb-2">
+                    <button onclick="setHotCue('B', 1)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 font-bold py-1 rounded text-xs border border-gray-700">C1</button>
+                    <button onclick="setHotCue('B', 2)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 font-bold py-1 rounded text-xs border border-gray-700">C2</button>
+                    <button onclick="setHotCue('B', 3)" class="bg-gray-800 hover:bg-yellow-600 text-yellow-400 font-bold py-1 rounded text-xs border border-gray-700">C3</button>
+                    <button onclick="triggerLoop('B', 1)" class="bg-gray-800 hover:bg-amber-600 text-amber-400 font-bold py-1 rounded text-xs border border-gray-700">1B</button>
+                    <button onclick="triggerLoop('B', 2)" class="bg-gray-800 hover:bg-amber-600 text-amber-400 font-bold py-1 rounded text-xs border border-gray-700">2B</button>
+                    <button onclick="triggerLoop('B', 4)" class="bg-gray-800 hover:bg-amber-600 text-amber-400 font-bold py-1 rounded text-xs border border-gray-700">4B</button>
                 </div>
             </div>
 
             <!-- Jogwheel Interactivo -->
             <div class="flex justify-center items-center my-2">
                 <div class="jogwheel flex justify-center items-center" id="jogB" onmousedown="startScratch('B', event)" ontouchstart="startScratch('B', event)">
-                    <div class="vinyl-center flex flex-col justify-center items-center text-[10px] text-gray-400 font-bold">
-                        <span>PIONEER</span>
-                    </div>
+                    <div class="w-16 h-16 bg-gray-950 border border-gray-700 rounded-full flex items-center justify-center text-[9px] text-gray-400 font-bold">DECK B</div>
                 </div>
             </div>
 
-            <!-- Botones Play / CUE / Sync -->
+            <!-- Controles Play / CUE -->
             <div class="grid grid-cols-3 gap-2 mt-2">
                 <button onclick="cueTrack('B')" class="bg-red-900/60 hover:bg-red-800 border border-red-700 py-2 rounded-lg font-bold text-xs">CUE</button>
                 <button onclick="playTrack('B')" id="playBtnB" class="bg-amber-500 hover:bg-amber-400 text-black py-2 rounded-lg font-black text-xs shadow-lg">PLAY</button>
                 <button onclick="syncTempo('B')" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 py-2 rounded-lg font-bold text-xs">SYNC</button>
             </div>
+
+            <!-- Contenedor invisible para YouTube IFrame -->
+            <div id="yt-player-B" class="hidden"></div>
         </section>
 
     </main>
@@ -158,8 +175,13 @@
     <script>
         let audioCtx = null;
         const decks = {
-            A: { buffer: null, source: null, gain: null, eqHigh: null, eqMid: null, eqLow: null, startTime: 0, pauseTime: 0, isPlaying: false, hotCues: {}, rotation: 0 },
-            B: { buffer: null, source: null, gain: null, eqHigh: null, eqMid: null, eqLow: null, startTime: 0, pauseTime: 0, isPlaying: false, hotCues: {}, rotation: 0 }
+            A: { type: 'none', buffer: null, source: null, ytPlayer: null, gain: null, eqHigh: null, eqMid: null, eqLow: null, startTime: 0, pauseTime: 0, isPlaying: false, hotCues: {}, rotation: 0 },
+            B: { type: 'none', buffer: null, source: null, ytPlayer: null, gain: null, eqHigh: null, eqMid: null, eqLow: null, startTime: 0, pauseTime: 0, isPlaying: false, hotCues: {}, rotation: 0 }
+        };
+
+        const demoTracks = {
+            A: "https://upload.wikimedia.org/wikipedia/commons/6/65/Funk_Loop_Sample.ogg",
+            B: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Electronic_Beat_Loop.ogg"
         };
 
         function initAudio() {
@@ -184,31 +206,86 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        async function loadAudio(input, deckId) {
+        async function loadAudioFile(input, deckId) {
             initAudio();
             const file = input.files[0];
             if (!file) return;
-            document.getElementById(`title${deckId}`).innerText = file.name;
+            document.getElementById(`title${deckId}`).innerText = `📁 ${file.name}`;
             const arrayBuffer = await file.arrayBuffer();
             decks[deckId].buffer = await audioCtx.decodeAudioData(arrayBuffer);
+            decks[deckId].type = 'file';
+        }
+
+        async function loadDemoTrack(deckId) {
+            initAudio();
+            document.getElementById(`title${deckId}`).innerText = `⏳ Cargando Demo ${deckId}...`;
+            try {
+                const response = await fetch(demoTracks[deckId]);
+                const arrayBuffer = await response.arrayBuffer();
+                decks[deckId].buffer = await audioCtx.decodeAudioData(arrayBuffer);
+                decks[deckId].type = 'file';
+                document.getElementById(`title${deckId}`).innerText = `⚡ Demo Track ${deckId}`;
+            } catch (e) {
+                document.getElementById(`title${deckId}`).innerText = `❌ Error cargando demo`;
+            }
+        }
+
+        // Extractor de ID de YouTube
+        function extractYouTubeId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function loadYouTubeTrack(deckId) {
+            initAudio();
+            const url = document.getElementById(`ytInput${deckId}`).value;
+            const videoId = extractYouTubeId(url);
+            if (!videoId) return alert("Enlace de YouTube inválido. Asegúrate de que sea un enlace correcto.");
+
+            document.getElementById(`title${deckId}`).innerText = `🎵 YouTube: ${videoId}`;
+            decks[deckId].type = 'youtube';
+
+            if (decks[deckId].ytPlayer) {
+                decks[deckId].ytPlayer.loadVideoById(videoId);
+                decks[deckId].ytPlayer.pauseVideo();
+            } else {
+                decks[deckId].ytPlayer = new YT.Player(`yt-player-${deckId}`, {
+                    height: '0',
+                    width: '0',
+                    videoId: videoId,
+                    playerVars: { 'autoplay': 0, 'controls': 0 },
+                    events: {
+                        'onReady': () => console.log(`YouTube ${deckId} listo`)
+                    }
+                });
+            }
         }
 
         function playTrack(deckId) {
             initAudio();
             const d = decks[deckId];
-            if (!d.buffer) return alert("¡Carga una pista MP3 primero!");
+            if (d.type === 'none') return alert("Carga una pista local o de YouTube primero.");
 
             if (d.isPlaying) {
-                d.source.stop();
-                d.pauseTime += audioCtx.currentTime - d.startTime;
+                if (d.type === 'file' && d.source) {
+                    d.source.stop();
+                    d.pauseTime += audioCtx.currentTime - d.startTime;
+                } else if (d.type === 'youtube' && d.ytPlayer) {
+                    d.ytPlayer.pauseVideo();
+                }
                 d.isPlaying = false;
                 document.getElementById(`playBtn${deckId}`).classList.remove('bg-red-600');
             } else {
-                d.source = audioCtx.createBufferSource();
-                d.source.buffer = d.buffer;
-                d.source.connect(d.eqHigh);
-                d.startTime = audioCtx.currentTime;
-                d.source.start(0, d.pauseTime % d.buffer.duration);
+                if (d.type === 'file' && d.buffer) {
+                    d.source = audioCtx.createBufferSource();
+                    d.source.buffer = d.buffer;
+                    d.source.connect(d.eqHigh);
+                    d.startTime = audioCtx.currentTime;
+                    d.source.start(0, d.pauseTime % d.buffer.duration);
+                } else if (d.type === 'youtube' && d.ytPlayer) {
+                    d.ytPlayer.playVideo();
+                }
                 d.isPlaying = true;
                 document.getElementById(`playBtn${deckId}`).classList.add('bg-red-600');
                 animateJog(deckId);
@@ -218,20 +295,24 @@
         function cueTrack(deckId) {
             const d = decks[deckId];
             if (d.isPlaying) {
-                d.source.stop();
+                if (d.type === 'file' && d.source) d.source.stop();
+                if (d.type === 'youtube' && d.ytPlayer) d.ytPlayer.pauseVideo();
                 d.isPlaying = false;
             }
             d.pauseTime = 0;
+            if (d.type === 'youtube' && d.ytPlayer) d.ytPlayer.seekTo(0);
             document.getElementById(`playBtn${deckId}`).classList.remove('bg-red-600');
         }
 
         function setHotCue(deckId, cueNum) {
-            initAudio();
             const d = decks[deckId];
-            const currentTime = d.isPlaying ? (audioCtx.currentTime - d.startTime + d.pauseTime) % d.buffer.duration : d.pauseTime;
-            d.hotCues[cueNum] = currentTime;
-            if (d.hotCues[cueNum] !== undefined && !d.isPlaying && d.buffer) {
-                d.pauseTime = d.hotCues[cueNum];
+            if (d.type === 'file' && d.buffer) {
+                const currentTime = d.isPlaying ? (audioCtx.currentTime - d.startTime + d.pauseTime) % d.buffer.duration : d.pauseTime;
+                d.hotCues[cueNum] = currentTime;
+                d.pauseTime = currentTime;
+            } else if (d.type === 'youtube' && d.ytPlayer) {
+                d.hotCues[cueNum] = d.ytPlayer.getCurrentTime();
+                d.ytPlayer.seekTo(d.hotCues[cueNum]);
             }
         }
 
@@ -266,25 +347,20 @@
             requestAnimationFrame(() => animateJog(deckId));
         }
 
-        // Interacción de Scratch en los platillos
         function startScratch(deckId, e) {
             const jog = document.getElementById(`jog${deckId}`);
             const startX = e.clientX || e.touches[0].clientX;
-            
             function onMove(moveEvent) {
                 const currentX = moveEvent.clientX || moveEvent.touches[0].clientX;
-                const diff = currentX - startX;
-                decks[deckId].rotation += diff * 0.5;
+                decks[deckId].rotation += (currentX - startX) * 0.5;
                 jog.style.transform = `rotate(${decks[deckId].rotation}deg)`;
             }
-
             function onEnd() {
                 window.removeEventListener('mousemove', onMove);
                 window.removeEventListener('mouseup', onEnd);
                 window.removeEventListener('touchmove', onMove);
                 window.removeEventListener('touchend', onEnd);
             }
-
             window.addEventListener('mousemove', onMove);
             window.addEventListener('mouseup', onEnd);
             window.addEventListener('touchmove', onMove);
@@ -302,8 +378,7 @@
         let rotated = false;
         function rotateDeckA() {
             rotated = !rotated;
-            const container = document.getElementById('deckA-container');
-            container.style.transform = rotated ? 'rotate(180deg)' : 'rotate(0deg)';
+            document.getElementById('deckA-container').style.transform = rotated ? 'rotate(180deg)' : 'rotate(0deg)';
         }
     </script>
 </body>
