@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PRO-DJ STUDIO - Controlador Virtual Standalone</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts: Orbitron & Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #07090e;
+      color: #e2e8f0;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    .font-digital {
+      font-family: 'Orbitron', monospace;
+    }
+
+    /* Textura de chasis de metal cepillado */
+    .bg-brushed-metal {
+      background: radial-gradient(ellipse at center, #1b202e 0%, #0d111a 70%, #06080d 100%);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    }
+
+    /* Jogwheel rotation animation */
+    .jogwheel-spin {
+      animation: spin 2.5s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Sliders personalizados */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+
+    /* Crossfader Custom Thumb */
+    .crossfader::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 42px;
+      width: 24px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, #e2e8f0 0%, #64748b 100%);
+      border: 1px solid #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.8), inset 0 1px 0 #ffffff;
+    }
+    .crossfader::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 14px;
+      background: #090d16;
+      border-radius: 7px;
+      border: 1px solid #1e293b;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    /* Faders Verticales de Volumen y Pitch */
+    .fader-v {
+      writing-mode: bt-lr;
+      -webkit-appearance: slider-vertical;
+      width: 20px;
+      height: 130px;
+      cursor: pointer;
+    }
+
+    /* Custom Knobs */
+    .knob-input {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #0f172a;
+      border-radius: 3px;
+      outline: none;
+      border: 1px solid #334155;
+    }
+    .knob-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 8px #38bdf8;
+    }
+
+    .knob-input-b::-webkit-slider-thumb {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+
+    /* Neón & Efectos de Glow */
+    .deck-a-glow {
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.12);
+      border-color: rgba(6, 182, 212, 0.35);
+    }
+    .deck-a-btn-active {
+      background-color: #06b6d4 !important;
+      color: #000 !important;
+      box-shadow: 0 0 20px #06b6d4;
+    }
+
+    .deck-b-glow {
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .deck-b-btn-active {
+      background-color: #f59e0b !important;
+      color: #000 !important;
+      box-shadow: 0 0 20px #f59e0b;
+    }
+
+    /* Modo Rotación Deck A (Face-to-Face) */
+    .rotate-deck-a {
+      transform: rotate(180deg);
+    }
+
+    /* Scrollbars elegantes */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 bg-brushed-metal flex flex-col justify-between min-h-screen">
+
+  <!-- ==================== HEADER BAR ==================== -->
+  <header class="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900/90 backdrop-blur rounded-2xl border border-slate-800/80 shadow-2xl mb-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 text-xl shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+        <i class="fa-solid fa-compact-disc fa-spin"></i>
+      </div>
+      <div>
+        <h1 class="font-digital text-lg sm:text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-amber-400">
+          PRO-DJ STUDIO <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">STANDALONE</span>
+        </h1>
+        <p class="text-[10px] text-slate-400 hidden sm:block">Controlador Virtual Profesional Web Audio Engine</p>
+      </div>
+    </div>
+
+    <!-- Master Toolbar Controls -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Master Volume Slider -->
+      <div class="flex items-center gap-2 bg-slate-950/90 px-3 py-1.5 rounded-xl border border-slate-800">
+        <i class="fa-solid fa-volume-high text-cyan-400 text-xs"></i>
+        <span class="text-[10px] font-bold text-slate-400 hidden md:inline">MASTER</span>
+        <input id="master-vol" type="range" min="0" max="1" step="0.01" value="0.85" oninput="setMasterVolume(this.value)" class="w-16 sm:w-24 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+      </div>
+
+      <!-- Rotation / Face to Face Mode -->
+      <button id="btn-rotate-mode" onclick="toggleFaceToFaceMode()" title="Girar Deck A para jugar 2 personas frente a frente" class="bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 px-3 py-2 rounded-xl border border-cyan-500/30 flex items-center gap-2 transition active:scale-95 shadow-md">
+        <i class="fa-solid fa-arrows-rotate text-cyan-400"></i>
+        <span class="hidden sm:inline font-semibold">Rotar Deck A (Face-to-Face)</span>
+      </button>
+
+      <!-- Fullscreen Toggle Button -->
+      <button onclick="toggleFullscreen()" title="Modo Pantalla Completa" class="bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 px-3 py-2 rounded-xl border border-slate-700 flex items-center gap-2 transition active:scale-95 shadow-md">
+        <i class="fa-solid fa-expand text-slate-400"></i>
+        <span class="hidden sm:inline">Pantalla Completa</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN DJ SURFACE ==================== -->
+  <main class="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1">
+    
+    <!-- ==================== DECK A (IZQUIERDA / NEÓN AZUL) ==================== -->
+    <section id="deck-a-container" class="lg:col-span-5 bg-slate-900/90 rounded-2xl p-3 sm:p-4 border border-cyan-500/30 deck-a-glow flex flex-col justify-between transition-transform duration-500">
+      <div>
+        <!-- Deck A Header Info -->
+        <div class="flex justify-between items-center mb-2">
+          <span class="font-digital text-cyan-400 font-black text-base sm:text-lg tracking-widest flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span> DECK A
+          </span>
+          <span id="deck-a-bpm-display" class="font-digital text-xs bg-cyan-950/90 text-cyan-300 px-2.5 py-1 rounded-lg border border-cyan-800/80 shadow">
+            BPM: 120.0
+          </span>
+        </div>
+
+        <!-- Track Information & Audio Inputs -->
+        <div class="bg-slate-950/80 rounded-xl p-3 border border-slate-800/90 mb-3 shadow-inner">
+          <div class="flex justify-between items-center text-xs mb-2 text-slate-400">
+            <span id="deck-a-title" class="font-semibold text-cyan-200 truncate max-w-[200px]">Sin pista cargada</span>
+            <span id="deck-a-time" class="font-digital text-cyan-400 font-bold">00:00 / 00:00</span>
+          </div>
+
+          <!-- Simulated Visual Waveform Bar -->
+          <div id="deck-a-waveform" class="w-full h-4 bg-slate-900 rounded border border-slate-800 overflow-hidden flex items-center mb-2.5 relative">
+            <div id="deck-a-progress" class="h-full bg-cyan-500/40 w-0 transition-all"></div>
+            <div class="absolute inset-0 flex justify-around items-center opacity-30 pointer-events-none">
+              <div class="w-0.5 h-full bg-cyan-400"></div><div class="w-0.5 h-2/3 bg-cyan-400"></div><div class="w-0.5 h-full bg-cyan-400"></div><div class="w-0.5 h-1/2 bg-cyan-400"></div><div class="w-0.5 h-full bg-cyan-400"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-2">
+            <!-- Local Audio File Input -->
+            <div class="flex gap-2">
+              <input type="file" id="deck-a-file" accept="audio/*" class="hidden" onchange="loadLocalFile(event, 'A')">
+              <button onclick="document.getElementById('deck-a-file').click()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 py-1.5 px-3 rounded-lg border border-slate-700 flex items-center justify-center gap-2 transition active:scale-95 shadow">
+                <i class="fa-solid fa-file-audio text-cyan-400"></i> Cargar MP3 / WAV
+              </button>
+            </div>
+            <!-- YouTube URL Input -->
+            <div class="flex gap-1.5">
+              <input type="text" id="deck-a-yt-url" placeholder="Pegar URL de YouTube..." class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 focus:outline-none focus:border-cyan-500 font-mono">
+              <button onclick="loadYouTubeVideo('A')" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1 rounded-lg font-semibold transition active:scale-95 flex items-center gap-1 shadow">
+                <i class="fa-brands fa-youtube"></i> Cargar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Container Oculto para Player de YouTube -->
+      <div id="yt-player-a-container" class="hidden"><div id="yt-player-a"></div></div>
+
+      <!-- Interactive Jogwheel -->
+      <div class="flex justify-center items-center my-2 relative">
+        <div id="jog-a" class="w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-slate-800 border-4 border-slate-800 flex items-center justify-center relative cursor-grab shadow-2xl transition-transform active:scale-95">
+          <div class="absolute inset-2 rounded-full border-2 border-dashed border-cyan-500/40"></div>
+          <div class="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-slate-950 border-2 border-cyan-500/60 flex flex-col items-center justify-center shadow-inner relative">
+            <div class="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center shadow-[0_0_10px_rgba(6,182,212,0.5)]">
+              <i class="fa-solid fa-music text-cyan-400 text-xs"></i>
+            </div>
+            <span class="text-[9px] text-cyan-400 font-digital mt-1.5 font-bold tracking-widest">PIONEER DJ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hot Cues & Loop Controls -->
+      <div class="space-y-2 mb-3">
+        <!-- Hot Cues -->
+        <div class="grid grid-cols-3 gap-1.5">
+          <button onclick="triggerHotCue('A', 1)" class="bg-cyan-950/50 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 py-1 rounded-lg text-[10px] font-bold transition">CUE 1</button>
+          <button onclick="triggerHotCue('A', 2)" class="bg-cyan-950/50 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 py-1 rounded-lg text-[10px] font-bold transition">CUE 2</button>
+          <button onclick="triggerHotCue('A', 3)" class="bg-cyan-950/50 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 py-1 rounded-lg text-[10px] font-bold transition">CUE 3</button>
+        </div>
+        <!-- Auto Loops -->
+        <div class="grid grid-cols-4 gap-1.5">
+          <button onclick="setLoop('A', 1)" class="bg-slate-800 hover:bg-cyan-950 text-cyan-400 border border-slate-700 py-1 rounded-lg text-[10px] font-bold">1 BEAT</button>
+          <button onclick="setLoop('A', 2)" class="bg-slate-800 hover:bg-cyan-950 text-cyan-400 border border-slate-700 py-1 rounded-lg text-[10px] font-bold">2 BEATS</button>
+          <button onclick="setLoop('A', 4)" class="bg-slate-800 hover:bg-cyan-950 text-cyan-400 border border-slate-700 py-1 rounded-lg text-[10px] font-bold">4 BEATS</button>
+          <button onclick="exitLoop('A')" class="bg-slate-800 hover:bg-red-950 text-red-400 border border-slate-700 py-1 rounded-lg text-[10px] font-bold">EXIT</button>
+        </div>
+      </div>
+
+      <!-- Transport Controls (Cue / Play / Pitch) -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <button id="cue-a-btn" onclick="cueTrack('A')" class="w-12 h-12 rounded-full bg-slate-800 border-2 border-amber-500/80 text-amber-400 font-bold text-xs shadow-lg hover:bg-amber-500 hover:text-black transition flex items-center justify-center active:scale-95">
+            CUE
+          </button>
+          <button id="play-a-btn" onclick="togglePlay('A')" class="w-14 h-14 rounded-full bg-slate-800 border-2 border-cyan-500/80 text-cyan-400 font-bold text-base shadow-lg hover:bg-cyan-500 hover:text-black transition flex items-center justify-center active:scale-95">
+            <i class="fa-solid fa-play"></i>
+          </button>
+        </div>
+
+        <!-- Pitch Tempo Control -->
+        <div class="flex items-center gap-2 bg-slate-950/90 p-2 rounded-xl border border-slate-800">
+          <div class="flex flex-col gap-1">
+            <button onclick="pitchBend('A', 0.02)" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs px-2 py-0.5 rounded font-bold border border-slate-700">+</button>
+            <button onclick="pitchBend('A', -0.02)" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs px-2 py-0.5 rounded font-bold border border-slate-700">-</button>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] text-slate-400 font-bold mb-0.5">PITCH</span>
+            <input id="pitch-a" type="range" min="0.8" max="1.2" step="0.01" value="1.0" oninput="changePitch('A', this.value)" class="fader-v">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== CENTRAL MASTER MIXER ==================== -->
+    <section class="lg:col-span-2 bg-slate-950/95 rounded-2xl p-3 border border-slate-800 flex flex-col justify-between shadow-2xl">
+      <div class="text-center pb-1 border-b border-slate-800 mb-1">
+        <span class="font-digital text-xs text-slate-400 font-bold tracking-widest">MASTER MIXER</span>
+      </div>
+
+      <!-- Channel Equalizer Knobs -->
+      <div class="grid grid-cols-2 gap-2 my-auto">
+        <!-- EQ Channel A -->
+        <div class="flex flex-col items-center gap-2 bg-slate-900/80 p-2 rounded-xl border border-cyan-950">
+          <span class="text-[10px] text-cyan-400 font-bold">CH A</span>
+          <div class="w-full text-center">
+            <label class="text-[8px] text-slate-400 block font-bold">HIGH</label>
+            <input type="range" id="eq-hi-a" min="-24" max="12" value="0" oninput="setEQ('A', 'hi', this.value)" class="knob-input">
+          </div>
+          <div class="w-full text-center">
+            <label class="text-[8px] text-slate-400 block font-bold">MID</label>
+            <input type="range" id="eq-mid-a" min="-24" max="12" value="0" oninput="setEQ('A', 'mid', this.value)" class="knob-input">
+          </div>
+          <div class="w-full text-center">
+            <label class="text-[8px] text-slate-400 block font-bold">LOW</label>
+            <input type="range" id="eq-low-a" min="-24" max="12" value="0" oninput="setEQ('A', 'low', this.value)" class="knob-input">
+          </div>
+          <div class="mt-1 flex flex-col items-center">
+            <label class="text-[8px] text-slate-400 mb-0.5 font-bold">VOL</label>
+            <input type="range" id="vol-a" min="0" max="1" step="0.01" value="0.9" oninput="setChannelVolume('A', this.value)" class="fader-v">
+          </div>
+        </div>
+
+        <!-- EQ Channel B -->
+        <div class="flex flex-col items-center gap-2 bg-slate-900/80 p-2 rounded-xl border border-amber-950">
+          <span class="text-[10px] text-amber-400 font-bold">CH B</span>
+          <div class="w-full text-center">
+            <label class="text-[8px] text-slate-400 block font-bold">HIGH</label>
+            <input type="range" id="eq-hi-b" min="-24" max="12" value="0" oninput="setEQ('B', 'hi', this.value)" class="knob-input knob-input-b">
+          </div>
+          <div class="w-full text-center">
+            <label class="text-[8px] text-slate-400 block font-bold">MID</label>
+            <input type="range" id="eq-mid-b" min="-24" max="12" value="0" oninput="setEQ('B', 'mid', this.value)" class="knob-input knob-input-b">
+          </div>
+          <div class="w-full text-center">
+            <label class="text-[8px] text-slate-400 block font-bold">LOW</label>
+            <input type="range" id="eq-low-b" min="-24" max="12" value="0" oninput="setEQ('B', 'low', this.value)" class="knob-input knob-input-b">
+          </div>
+          <div class="mt-1 flex flex-col items-center">
+            <label class="text-[8px] text-slate-400 mb-0.5 font-bold">VOL</label>
+            <input type="range" id="vol-b" min="0" max="1" step="0.01" value="0.9" oninput="setChannelVolume('B', this.value)" class="fader-v">
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Animated VU Meters -->
+      <div class="my-2 bg-slate-900 p-2 rounded-xl border border-slate-800 flex justify-center gap-4">
+        <!-- Meter CH A -->
+        <div class="flex gap-1 h-12 items-end" id="vu-meter-a">
+          <div class="w-1.5 h-3 rounded-sm bg-green-500 opacity-20 vu-segment"></div>
+          <div class="w-1.5 h-5 rounded-sm bg-green-500 opacity-20 vu-segment"></div>
+          <div class="w-1.5 h-7 rounded-sm bg-yellow-500 opacity-20 vu-segment"></div>
+          <div class="w-1.5 h-9 rounded-sm bg-red-500 opacity-20 vu-segment"></div>
+        </div>
+        <!-- Meter CH B -->
+        <div class="flex gap-1 h-12 items-end" id="vu-meter-b">
+          <div class="w-1.5 h-3 rounded-sm bg-green-500 opacity-20 vu-segment"></div>
+          <div class="w-1.5 h-5 rounded-sm bg-green-500 opacity-20 vu-segment"></div>
+          <div class="w-1.5 h-7 rounded-sm bg-yellow-500 opacity-20 vu-segment"></div>
+          <div class="w-1.5 h-9 rounded-sm bg-red-500 opacity-20 vu-segment"></div>
+        </div>
+      </div>
+
+      <!-- CROSSFADER -->
+      <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+        <div class="flex justify-between text-[9px] font-bold mb-1">
+          <span class="text-cyan-400">DECK A</span>
+          <span class="text-slate-400">CROSSFADER</span>
+          <span class="text-amber-400">DECK B</span>
+        </div>
+        <input id="crossfader" type="range" min="0" max="1" step="0.01" value="0.5" oninput="updateCrossfader(this.value)" class="w-full crossfader">
+      </div>
+    </section>
+
+    <!-- ==================== DECK B (DERECHA / NEÓN NARANJA) ==================== -->
+    <section id="deck-b-container" class="lg:col-span-5 bg-slate-900/90 rounded-2xl p-3 sm:p-4 border border-amber-500/30 deck-b-glow flex flex-col justify-between">
+      <div>
+        <!-- Deck B Header Info -->
+        <div class="flex justify-between items-center mb-2">
+          <span class="font-digital text-amber-400 font-black text-base sm:text-lg tracking-widest flex items-center gap-2">
+            DECK B <span class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
+          </span>
+          <span id="deck-b-bpm-display" class="font-digital text-xs bg-amber-950/90 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-800/80 shadow">
+            BPM: 128.0
+          </span>
+        </div>
+
+        <!-- Track Information & Audio Inputs -->
+        <div class="bg-slate-950/80 rounded-xl p-3 border border-slate-800/90 mb-3 shadow-inner">
+          <div class="flex justify-between items-center text-xs mb-2 text-slate-400">
+            <span id="deck-b-title" class="font-semibold text-amber-200 truncate max-w-[200px]">Sin pista cargada</span>
+            <span id="deck-b-time" class="font-digital text-amber-400 font-bold">00:00 / 00:00</span>
+          </div>
+
+          <!-- Simulated Visual Waveform Bar -->
+          <div id="deck-b-waveform" class="w-full h-4 bg-slate-900 rounded border border-slate-800 overflow-hidden flex items-center mb-2.5 relative">
+            <div id="deck-b-progress" class="h-full bg-amber-500/40 w-0 transition-all"></div>
+            <div class="absolute inset-0 flex justify-around items-center opacity-30 pointer-events-none">
+              <div class="w-0.5 h-full bg-amber-400"></div><div class="w-0.5 h-2/3 bg-amber-400"></div><div class="w-0.5 h-full bg-amber-400"></div><div class="w-0.5 h-1/2 bg-amber-400"></div><div class="w-0.5 h-full bg-amber-400"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-2">
+            <!-- Local Audio File Input -->
+            <div class="flex gap-2">
+              <input type="file" id="deck-b-file" accept="audio/*" class="hidden" onchange="loadLocalFile(event, 'B')">
+              <button onclick="document.getElementById('deck-b-file').click()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 py-1.5 px-3 rounded-lg border border-slate-700 flex items-center justify-center gap-2 transition active:scale-95 shadow">
+                <i class="fa-solid fa-file-audio text-amber-400"></i> Cargar MP3 / WAV
+              </button>
+            </div>
+            <!-- YouTube URL Input -->
+            <div class="flex gap-1.5">
+              <input type="text" id="deck-b-yt-url" placeholder="Pegar URL de YouTube..." class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 focus:outline-none focus:border-amber-500 font-mono">
+              <button onclick="loadYouTubeVideo('B')" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1 rounded-lg font-semibold transition active:scale-95 flex items-center gap-1 shadow">
+                <i class="fa-brands fa-youtube"></i> Cargar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Container Oculto para Player de YouTube -->
+      <div id="yt-player-b-container" class="hidden"><div id="yt-player-b"></div></div>
+
+      <!-- Interactive Jogwheel -->
+      <div class="flex justify-center items-center my-2 relative">
+        <div id="jog-b" class="w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-slate-800 border-4 border-slate-800 flex items-center justify-center relative cursor-grab shadow-2xl transition-transform active:scale-95">
+          <div class="absolute inset-2 rounded-full border-2 border-dashed border-amber-500/40"></div>
+          <div class="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-slate-950 border-2 border-amber-500/60 flex flex-col items-center justify-center shadow-inner relative">
+            <div class="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center shadow-[0_0_10px_rgba(245,158,11,0.5)]">
+              <i class="fa-solid fa-music text-amber-400 text-xs"></i>
+            </div>
+            <span class="text-[9px] text-amber-400 font-digital mt-1.5 font-bold tracking-widest">PIONEER DJ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hot Cues & Loop Controls -->
+      <div class="space-y-2 mb-3">
+        <!-- Hot Cues -->
+        <div class="grid grid-cols-3 gap-1.5">
+          <button onclick="triggerHotCue('B', 1)" class="bg-amber-950/50 hover:bg-amber-900 border border-amber-800 text-amber-300 py-1 rounded-lg text-[10px] font-bold transition">CUE 1</button>
+          <button onclick="triggerHotCue('B', 2)" class="bg-amber-950/50 hover:bg-amber-900 border border-amber-800 text-amber-300 py-1 rounded-lg text-[10px] font-bold transition">CUE 2</button>
+          <button onclick="triggerHotCue('B', 3)" class="bg-amber-950/50 hover:bg-amber-900 border border-amber-800 text-amber-300 py-1 rounded-lg text-[10px] font-bold transition">CUE 3</button>
+        </div>
+        <!-- Auto Loops -->
+        <div class="grid grid-cols-4 gap-1.5">
+          <button onclick="setLoop('B', 1)" class="bg-slate-800 hover:bg-amber-950 text-amber-400 border border-slate-700 py-1 rounded-lg text-[10px] font-bold">1 BEAT</button>
+          <button onclick="setLoop('B', 2)" class="bg-slate-800 hover:bg-amber-950 text-amber-400 border border-slate-700 py-1 rounded-lg text-[10px] font-bold">2 BEATS</button>
+          <button onclick="setLoop('B', 4)" class="bg-slate-800 hover:bg-amber-950 text-amber-400 border border-slate-700 py-1 rounded-lg text-[10px] font-bold">4 BEATS</button>
+          <button onclick="exitLoop('B')" class="bg-slate-800 hover:bg-red-950 text-red-400 border border-slate-700 py-1 rounded-lg text-[10px] font-bold">EXIT</button>
+        </div>
+      </div>
+
+      <!-- Transport Controls (Cue / Play / Pitch) -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <button id="cue-b-btn" onclick="cueTrack('B')" class="w-12 h-12 rounded-full bg-slate-800 border-2 border-amber-500/80 text-amber-400 font-bold text-xs shadow-lg hover:bg-amber-500 hover:text-black transition flex items-center justify-center active:scale-95">
+            CUE
+          </button>
+          <button id="play-b-btn" onclick="togglePlay('B')" class="w-14 h-14 rounded-full bg-slate-800 border-2 border-amber-500/80 text-amber-400 font-bold text-base shadow-lg hover:bg-amber-500 hover:text-black transition flex items-center justify-center active:scale-95">
+            <i class="fa-solid fa-play"></i>
+          </button>
+        </div>
+
+        <!-- Pitch Tempo Control -->
+        <div class="flex items-center gap-2 bg-slate-950/90 p-2 rounded-xl border border-slate-800">
+          <div class="flex flex-col gap-1">
+            <button onclick="pitchBend('B', 0.02)" class="bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs px-2 py-0.5 rounded font-bold border border-slate-700">+</button>
+            <button onclick="pitchBend('B', -0.02)" class="bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs px-2 py-0.5 rounded font-bold border border-slate-700">-</button>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] text-slate-400 font-bold mb-0.5">PITCH</span>
+            <input id="pitch-b" type="range" min="0.8" max="1.2" step="0.01" value="1.0" oninput="changePitch('B', this.value)" class="fader-v">
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="mt-3 p-2 bg-slate-900/80 rounded-xl border border-slate-800/80 text-center text-xs text-slate-400">
+    PRO-DJ Studio Virtual Engine &bull; Web Audio API Native Processing &bull; Carga directa de audio MP3/WAV y YouTube
+  </footer>
+
+  <!-- YouTube IFrame Player API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <script>
+    // Inicialización del AudioContext de la Web Audio API
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = new AudioContext();
+
+    // Estructura principal de datos para Decks A y B
+    const decks = {
+      A: {
+        type: null, // 'local' | 'youtube'
+        audioElement: new Audio(),
+        ytPlayer: null,
+        sourceNode: null,
+        gainNode: audioCtx.createGain(),
+        channelVolNode: audioCtx.createGain(),
+        analyser: audioCtx.createAnalyser(),
+        eqHi: audioCtx.createBiquadFilter(),
+        eqMid: audioCtx.createBiquadFilter(),
+        eqLow: audioCtx.createBiquadFilter(),
+        isPlaying: false,
+        cueTime: 0,
+        pitch: 1.0,
+        loopInterval: null,
+        hotCues: { 1: 0, 2: 0, 3: 0 }
+      },
+      B: {
+        type: null,
+        audioElement: new Audio(),
+        ytPlayer: null,
+        sourceNode: null,
+        gainNode: audioCtx.createGain(),
+        channelVolNode: audioCtx.createGain(),
+        analyser: audioCtx.createAnalyser(),
+        eqHi: audioCtx.createBiquadFilter(),
+        eqMid: audioCtx.createBiquadFilter(),
+        eqLow: audioCtx.createBiquadFilter(),
+        isPlaying: false,
+        cueTime: 0,
+        pitch: 1.0,
+        loopInterval: null,
+        hotCues: { 1: 0, 2: 0, 3: 0 }
+      }
+    };
+
+    let masterGainNode = audioCtx.createGain();
+    masterGainNode.connect(audioCtx.destination);
+    masterGainNode.gain.value = 0.85;
+
+    // Configuración de la cadena de procesado Web Audio API por Deck
+    function setupAudioNodes(deckKey) {
+      const deck = decks[deckKey];
+      deck.audioElement.crossOrigin = "anonymous";
+
+      deck.eqHi.type = 'highshelf'; deck.eqHi.frequency.value = 3200;
+      deck.eqMid.type = 'peaking'; deck.eqMid.frequency.value = 1000; deck.eqMid.Q.value = 1;
+      deck.eqLow.type = 'lowshelf'; deck.eqLow.frequency.value = 250;
+
+      deck.analyser.fftSize = 64;
+
+      if (!deck.sourceNode) {
+        deck.sourceNode = audioCtx.createMediaElementSource(deck.audioElement);
+        deck.sourceNode
+          .connect(deck.eqLow)
+          .connect(deck.eqMid)
+          .connect(deck.eqHi)
+          .connect(deck.channelVolNode)
+          .connect(deck.gainNode)
+          .connect(deck.analyser)
+          .connect(masterGainNode);
+      }
+    }
+
+    // Reactivar AudioContext con interacción del usuario
+    window.addEventListener('click', () => {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }, { once: true });
+
+    // Cargar archivo local (MP3, WAV, OGG)
+    function loadLocalFile(event, deckKey) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const deck = decks[deckKey];
+      deck.type = 'local';
+      setupAudioNodes(deckKey);
+
+      deck.audioElement.src = URL.createObjectURL(file);
+      document.getElementById(`deck-${deckKey.toLowerCase()}-title`).innerText = file.name;
+      
+      deck.audioElement.onloadedmetadata = () => updateTimeDisplay(deckKey);
+      deck.audioElement.ontimeupdate = () => {
+        updateTimeDisplay(deckKey);
+        updateProgressBar(deckKey);
+      };
+    }
+
+    // Extraer ID de YouTube
+    function extractYouTubeId(url) {
+      const match = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    // Cargar video o canción desde YouTube
+    function loadYouTubeVideo(deckKey) {
+      const urlInput = document.getElementById(`deck-${deckKey.toLowerCase()}-yt-url`).value;
+      const videoId = extractYouTubeId(urlInput);
+      if (!videoId) return alert("URL de YouTube no válida");
+
+      const deck = decks[deckKey];
+      deck.type = 'youtube';
+      if (deck.audioElement) deck.audioElement.pause();
+
+      const containerId = `yt-player-${deckKey.toLowerCase()}`;
+      if (deck.ytPlayer) {
+        deck.ytPlayer.loadVideoById(videoId);
+      } else {
+        deck.ytPlayer = new YT.Player(containerId, {
+          height: '0',
+          width: '0',
+          videoId: videoId,
+          events: {
+            'onReady': () => {
+              document.getElementById(`deck-${deckKey.toLowerCase()}-title`).innerText = `YouTube: ${videoId}`;
+            },
+            'onStateChange': (e) => {
+              if (e.data === YT.PlayerState.PLAYING) {
+                deck.isPlaying = true;
+                updatePlayButtonUI(deckKey, true);
+                startJogwheel(deckKey);
+              } else {
+                deck.isPlaying = false;
+                updatePlayButtonUI(deckKey, false);
+                stopJogwheel(deckKey);
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Controles de Reproducción (Play/Pause)
+    function togglePlay(deckKey) {
+      const deck = decks[deckKey];
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      if (deck.type === 'local') {
+        if (deck.isPlaying) {
+          deck.audioElement.pause();
+          deck.isPlaying = false;
+          stopJogwheel(deckKey);
+        } else {
+          deck.audioElement.play();
+          deck.isPlaying = true;
+          startJogwheel(deckKey);
+        }
+        updatePlayButtonUI(deckKey, deck.isPlaying);
+      } else if (deck.type === 'youtube' && deck.ytPlayer) {
+        if (deck.isPlaying) deck.ytPlayer.pauseVideo();
+        else deck.ytPlayer.playVideo();
+      }
+    }
+
+    function updatePlayButtonUI(deckKey, isPlaying) {
+      const btn = document.getElementById(`play-${deckKey.toLowerCase()}-btn`);
+      const activeClass = deckKey === 'A' ? 'deck-a-btn-active' : 'deck-b-btn-active';
+      if (isPlaying) {
+        btn.classList.add(activeClass);
+        btn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+      } else {
+        btn.classList.remove(activeClass);
+        btn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+      }
+    }
+
+    // Función de CUE
+    function cueTrack(deckKey) {
+      const deck = decks[deckKey];
+      if (deck.type === 'local') {
+        if (deck.isPlaying) {
+          deck.audioElement.pause();
+          deck.audioElement.currentTime = deck.cueTime;
+          deck.isPlaying = false;
+          updatePlayButtonUI(deckKey, false);
+          stopJogwheel(deckKey);
+        } else {
+          deck.cueTime = deck.audioElement.currentTime;
+        }
+      } else if (deck.type === 'youtube' && deck.ytPlayer) {
+        deck.ytPlayer.seekTo(0);
+        deck.ytPlayer.pauseVideo();
+      }
+    }
+
+    // Hot Cues
+    function triggerHotCue(deckKey, num) {
+      const deck = decks[deckKey];
+      if (deck.type === 'local') {
+        if (deck.hotCues[num] === 0 || !deck.hotCues[num]) {
+          deck.hotCues[num] = deck.audioElement.currentTime;
+        } else {
+          deck.audioElement.currentTime = deck.hotCues[num];
+        }
+      }
+    }
+
+    // Controles de Pitch / Tempo Speed
+    function changePitch(deckKey, value) {
+      const deck = decks[deckKey];
+      deck.pitch = parseFloat(value);
+      if (deck.type === 'local') deck.audioElement.playbackRate = deck.pitch;
+      else if (deck.type === 'youtube' && deck.ytPlayer) deck.ytPlayer.setPlaybackRate(deck.pitch);
+
+      const baseBpm = deckKey === 'A' ? 120 : 128;
+      document.getElementById(`deck-${deckKey.toLowerCase()}-bpm-display`).innerText = `BPM: ${(baseBpm * deck.pitch).toFixed(1)}`;
+    }
+
+    function pitchBend(deckKey, amount) {
+      const slider = document.getElementById(`pitch-${deckKey.toLowerCase()}`);
+      let newVal = Math.max(0.8, Math.min(1.2, parseFloat(slider.value) + amount));
+      slider.value = newVal;
+      changePitch(deckKey, newVal);
+    }
+
+    // Ecualizador de 3 bandas (Web Audio BiquadFilterNodes)
+    function setEQ(deckKey, band, value) {
+      const deck = decks[deckKey];
+      const gainVal = parseFloat(value);
+      if (band === 'hi') deck.eqHi.gain.value = gainVal;
+      if (band === 'mid') deck.eqMid.gain.value = gainVal;
+      if (band === 'low') deck.eqLow.gain.value = gainVal;
+    }
+
+    // Volumen por Canal
+    function setChannelVolume(deckKey, value) {
+      decks[deckKey].channelVolNode.gain.value = parseFloat(value);
+    }
+
+    // Volumen Master General
+    function setMasterVolume(value) {
+      masterGainNode.gain.value = parseFloat(value);
+    }
+
+    // Crossfader Horizontal
+    function updateCrossfader(val) {
+      const crossVal = parseFloat(val);
+      const volA = Math.cos(crossVal * 0.5 * Math.PI);
+      const volB = Math.sin(crossVal * 0.5 * Math.PI);
+
+      decks.A.gainNode.gain.value = volA;
+      decks.B.gainNode.gain.value = volB;
+
+      if (decks.A.ytPlayer && typeof decks.A.ytPlayer.setVolume === 'function') decks.A.ytPlayer.setVolume(volA * 100);
+      if (decks.B.ytPlayer && typeof decks.B.ytPlayer.setVolume === 'function') decks.B.ytPlayer.setVolume(volB * 100);
+    }
+
+    // Auto Loops
+    function setLoop(deckKey, beats) {
+      const deck = decks[deckKey];
+      const seconds = (60 / 120) * beats;
+      if (deck.type === 'local') {
+        const startTime = deck.audioElement.currentTime;
+        if (deck.loopInterval) clearInterval(deck.loopInterval);
+        deck.loopInterval = setInterval(() => {
+          if (deck.audioElement.currentTime >= startTime + seconds) {
+            deck.audioElement.currentTime = startTime;
+          }
+        }, 30);
+      }
+    }
+
+    function exitLoop(deckKey) {
+      if (decks[deckKey].loopInterval) {
+        clearInterval(decks[deckKey].loopInterval);
+        decks[deckKey].loopInterval = null;
+      }
+    }
+
+    // Animación Jogwheel
+    function startJogwheel(deckKey) { document.getElementById(`jog-${deckKey.toLowerCase()}`).classList.add('jogwheel-spin'); }
+    function stopJogwheel(deckKey) { document.getElementById(`jog-${deckKey.toLowerCase()}`).classList.remove('jogwheel-spin'); }
+
+    // Actualización de Tiempos y Barra de Progreso
+    function updateTimeDisplay(deckKey) {
+      const deck = decks[deckKey];
+      if (deck.type === 'local') {
+        const cur = formatTime(deck.audioElement.currentTime || 0);
+        const dur = formatTime(deck.audioElement.duration || 0);
+        document.getElementById(`deck-${deckKey.toLowerCase()}-time`).innerText = `${cur} / ${dur}`;
+      }
+    }
+
+    function updateProgressBar(deckKey) {
+      const deck = decks[deckKey];
+      if (deck.type === 'local' && deck.audioElement.duration) {
+        const pct = (deck.audioElement.currentTime / deck.audioElement.duration) * 100;
+        document.getElementById(`deck-${deckKey.toLowerCase()}-progress`).style.width = `${pct}%`;
+      }
+    }
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60); const s = Math.floor(secs % 60);
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // Modo Face-to-Face (Rotación 180° del Deck A)
+    let isRotated = false;
+    function toggleFaceToFaceMode() {
+      const deckA = document.getElementById('deck-a-container');
+      isRotated = !isRotated;
+      if (isRotated) {
+        deckA.classList.add('rotate-deck-a');
+      } else {
+        deckA.classList.remove('rotate-deck-a');
+      }
+    }
+
+    // Pantalla Completa
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.log(`Error al activar pantalla completa: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // VU Meters Animados en tiempo real con AnalyserNode
+    function animateVUMeters() {
+      ['A', 'B'].forEach(deckKey => {
+        const deck = decks[deckKey];
+        const segments = document.getElementById(`vu-meter-${deckKey.toLowerCase()}`).querySelectorAll('.vu-segment');
+        
+        if (deck.isPlaying) {
+          let level = 0;
+          if (deck.type === 'local' && deck.sourceNode) {
+            const dataArray = new Uint8Array(deck.analyser.frequencyBinCount);
+            deck.analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            const avg = sum / dataArray.length;
+            level = Math.floor((avg / 256) * 4);
+          } else {
+            level = Math.floor(Math.random() * 4);
+          }
+
+          segments.forEach((seg, idx) => {
+            seg.style.opacity = idx <= level ? '1' : '0.2';
+          });
+        } else {
+          segments.forEach(seg => seg.style.opacity = '0.2');
+        }
+      });
+      requestAnimationFrame(animateVUMeters);
+    }
+
+    requestAnimationFrame(animateVUMeters);
+  </script>
+</body>
+</html>
